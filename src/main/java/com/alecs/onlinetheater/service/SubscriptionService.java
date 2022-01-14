@@ -20,16 +20,27 @@ public class SubscriptionService {
         this.planService = planService;
     }
 
-    public Subscription addNewSubscription(Spectator spectator, int planId, LocalDateTime startDate) {
-        Optional<Plan> requestedPlan = planService.findPlan(planId);
+    public Subscription addOrUpdateSubscription(Spectator spectator, int planId, LocalDateTime startDate) {
 
-        if(!requestedPlan.isPresent())
-            throw new DataAccessException("Requested plan not found!") {};
+        Subscription spectatorSubscription = subscriptionRepository
+                .findSubscriptionBySpectatorSpectatorId(spectator.getSpectatorId())
+                .orElse(new Subscription(startDate, startDate.plusDays(30)));
 
-        Subscription spectatorSubscription = new Subscription(startDate, startDate.plusDays(30));
+        Plan requestedPlan = planService.findPlan(planId)
+                                        .orElseThrow(() -> new DataAccessException("Requested plan not found!") {});
+
+        if(checkValidSubscription(spectatorSubscription)) {
+            spectatorSubscription.setSubscriptionStartDate(LocalDateTime.now());
+            spectatorSubscription.setSubscriptionEndDate(LocalDateTime.now().plusDays(30));
+        }
+
         spectatorSubscription.setSpectator(spectator);
-        spectatorSubscription.setSubscriptionPlan(requestedPlan.get());
+        spectatorSubscription.setSubscriptionPlan(requestedPlan);
 
         return subscriptionRepository.save(spectatorSubscription);
+    }
+
+    public Boolean checkValidSubscription(Subscription subscription) {
+        return LocalDateTime.now().isAfter(subscription.getSubscriptionEndDate());
     }
 }

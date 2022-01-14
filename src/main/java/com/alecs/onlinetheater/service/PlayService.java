@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class PlayService {
@@ -24,41 +25,41 @@ public class PlayService {
 
     public List<Play> listAllPlays () { return playRepository.findAll(); }
 
-    public Optional<Play> findPlay(int playId) {
-        return playRepository.findById(playId);
+    public List<Play> listAllPlaysByGenre(String genre) {
+        return playRepository.findAll()
+                .stream()
+                .filter(p -> p.getGenre().toLowerCase().equals(genre.toLowerCase()))
+                .collect(Collectors.toList());
+    }
+
+    public Play findPlay(int playId) {
+        return playRepository.findById(playId)
+                .orElseThrow(() -> new DataAccessException("Plan with given id not found") {});
     }
 
     public Play addNewPlay(Play play, int roomId, int playwrightId) {
-        Optional<Room> requestedRoom = roomService.findRoom(roomId);
+        Room requestedRoom = roomService.findRoom(roomId)
+                .orElseThrow(() -> new DataAccessException("Room with given id not found") {});
 
-        if(!requestedRoom.isPresent())
-            throw new DataAccessException("Room with given id not found") {};
+        Playwright requestedPlaywright = playwrightService.findPlaywright(playwrightId)
+                .orElseThrow(() -> new DataAccessException("Playwright with given id not found") {});
 
-        Optional<Playwright> requestedPlaywright = playwrightService.findPlaywright(playwrightId);
-
-        if(!requestedPlaywright.isPresent())
-            throw new DataAccessException("Playwright with given id not found") {};
-
-        play.setPlayRoom(requestedRoom.get());
-        play.setPlaywright(requestedPlaywright.get());
+        play.setPlayRoom(requestedRoom);
+        play.setPlaywright(requestedPlaywright);
 
         return playRepository.save(play);
     }
 
     public Play updatePlay(Play play, int roomId, int playwrightId) {
         if(playRepository.existsById(play.getPlayId())) {
-            Optional<Room> requestedRoom = roomService.findRoom(roomId);
+            Room requestedRoom = roomService.findRoom(roomId)
+                    .orElseThrow(() -> new DataAccessException("Room with given id not found") {});
 
-            if(!requestedRoom.isPresent())
-                throw new DataAccessException("Room with given id not found") {};
+            Playwright requestedPlaywright = playwrightService.findPlaywright(playwrightId)
+                    .orElseThrow(() -> new DataAccessException("Playwright with given id not found") {});
 
-            Optional<Playwright> requestedPlaywright = playwrightService.findPlaywright(playwrightId);
-
-            if(!requestedPlaywright.isPresent())
-                throw new DataAccessException("Playwright with given id not found") {};
-
-            play.setPlayRoom(requestedRoom.get());
-            play.setPlaywright(requestedPlaywright.get());
+            play.setPlayRoom(requestedRoom);
+            play.setPlaywright(requestedPlaywright);
 
             return playRepository.save(play);
         }

@@ -1,10 +1,13 @@
 package com.alecs.onlinetheater.exceptionhandling;
 
+import com.alecs.onlinetheater.exceptions.NoSubscriptionException;
+import com.alecs.onlinetheater.exceptions.SubscriptionAccessException;
 import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -21,6 +24,16 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<?> handleException(RuntimeException exception) {
+        return ResponseEntity.badRequest().body(exception.getMessage());
+    }
+
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<?> handleMissingParamsException(MissingServletRequestParameterException ex) {
+        return ResponseEntity.badRequest().body(ex.getParameterName() + " parameter is missing");
+    }
+
+    @ExceptionHandler({SubscriptionAccessException.class, NoSubscriptionException.class})
+    public ResponseEntity<?> handleSubscriptionException(RuntimeException exception) {
         return ResponseEntity.badRequest().body(exception.getMessage());
     }
 

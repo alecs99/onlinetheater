@@ -1,13 +1,14 @@
 package com.alecs.onlinetheater.controller;
 
+import com.alecs.onlinetheater.model.Play;
 import com.alecs.onlinetheater.model.Spectator;
 import com.alecs.onlinetheater.service.SpectatorService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
-import javax.websocket.server.PathParam;
 import java.net.URI;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -20,7 +21,7 @@ public class SpectatorController {
     }
 
     @GetMapping("/{spectatorId}")
-    public ResponseEntity<?> listPlanById(@PathVariable int spectatorId) {
+    public ResponseEntity<?> listSpectatorById(@PathVariable int spectatorId) {
         Optional<Spectator> result = spectatorService.getSpectatorDetails(spectatorId);
 
         if (result.isPresent())
@@ -29,10 +30,21 @@ public class SpectatorController {
         return ResponseEntity.notFound().build();
     }
 
+    @GetMapping("/play")
+    public ResponseEntity<List<Play>> listWatchedPlays(@RequestBody @Valid Spectator spectator) {
+        return ResponseEntity.ok().body(spectatorService.getSpectatorPlays(spectator));
+    }
+
     @PostMapping
     public ResponseEntity<Spectator> addSpectator (@RequestBody @Valid Spectator spectator) {
         Spectator savedSpectator = spectatorService.addNewSpectator(spectator);
         return ResponseEntity.created(URI.create(savedSpectator.getSpectatorId().toString())).body(savedSpectator);
+    }
+
+    @PostMapping("/{spectatorId}/watch/{playId}")
+    public ResponseEntity<Spectator> watchPlay (@PathVariable int spectatorId,
+                                           @PathVariable int playId) {
+        return ResponseEntity.ok().body(spectatorService.watchPlay(spectatorId, playId));
     }
 
     @PutMapping
@@ -41,9 +53,9 @@ public class SpectatorController {
     }
 
     @PutMapping("/subscription/{planId}")
-    public ResponseEntity<Spectator> addSubscription(@RequestBody @Valid Spectator spectator,
+    public ResponseEntity<Spectator> addOrUpdateSubscription(@RequestBody @Valid Spectator spectator,
                                                      @PathVariable int planId) {
-        return ResponseEntity.ok().body(spectatorService.addSubscription(spectator, planId));
+        return ResponseEntity.ok().body(spectatorService.addOrUpdateSubscription(spectator, planId));
     }
 
     @DeleteMapping("/{spectatorId}")

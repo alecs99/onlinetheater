@@ -1,6 +1,7 @@
 package com.alecs.onlinetheater.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.hibernate.validator.constraints.Length;
 
 import javax.persistence.*;
 import javax.validation.constraints.NotEmpty;
@@ -15,9 +16,11 @@ public class Room {
     private Integer roomId;
     @NotNull(message = "Room name can not be null!")
     @NotEmpty(message = "Room name can not be empty!")
+    @Length(min=3, max = 20, message = "Room name can have a length between 3 and 20 characters!")
     public String roomName;
     @NotNull(message = "Room type can not be null!")
     @NotEmpty(message = "Room type can not be empty!")
+    @Length(min=3, max = 20, message = "Room type can have a length between 3 and 20 characters!")
     public String roomType;
 
     @OneToMany(mappedBy = "playRoom")

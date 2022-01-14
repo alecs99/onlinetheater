@@ -1,14 +1,17 @@
 package com.alecs.onlinetheater.service;
 
-import com.alecs.onlinetheater.model.Plan;
-import com.alecs.onlinetheater.model.Spectator;
-import com.alecs.onlinetheater.model.Subscription;
+import com.alecs.onlinetheater.exceptions.NoSubscriptionException;
+import com.alecs.onlinetheater.exceptions.SubscriptionAccessException;
+import com.alecs.onlinetheater.model.*;
 import com.alecs.onlinetheater.repository.SpectatorRepository;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.Comparator;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class SpectatorService {
@@ -26,12 +29,48 @@ public class SpectatorService {
         return spectatorRepository.findById(id);
     }
 
+    public List<Play> getSpectatorPlays(Spectator spectator) {
+        Spectator dbSpectator = spectatorRepository.findById(spectator.getSpectatorId())
+                .orElseThrow(() -> new DataAccessException("Spectator not found") {});
+        return dbSpectator.getPlayList()
+                .stream()
+                .sorted(Comparator.comparing(Play::getPlayName))
+                .collect(Collectors.toList());
+    }
+
     public Spectator addNewSpectator(Spectator spectator) {
         return spectatorRepository.save(spectator);
     }
 
-    public Spectator addSubscription(Spectator spectator, int planId) {
-        Subscription subscription = subscriptionService.addNewSubscription(spectator, planId, LocalDateTime.now());
+    public Spectator watchPlay(int spectatorId, int playId) {
+        Spectator spectator = spectatorRepository.findById(spectatorId)
+                .orElseThrow(() -> new DataAccessException("Spectator not found") {});
+
+        Play requestedPlay = playService.findPlay(playId);
+
+        Room playRoom = requestedPlay.getPlayRoom();
+
+        Subscription spectatorSubscription = spectator.getSubscription();
+        String spectatorPlan = spectatorSubscription.getSubscriptionPlan().getPlanName();
+
+        // Check if Spectator have valid Subscription
+        if (spectatorPlan.isEmpty() || subscriptionService.checkValidSubscription(spectatorSubscription))
+            throw new NoSubscriptionException("Spectator don't have any subscription! Please get one!");
+
+        // Spectator try to access a room not available for his subscription
+        if (!spectatorPlan.equals("Premium") && playRoom.getRoomType().equals("Premium")){
+                throw new SubscriptionAccessException("Your subscription doesn't allow accessing this play!!");
+        } else {
+            List<Play> playList = spectator.getPlayList();
+            playList.add(requestedPlay);
+            spectator.setPlayList(playList);
+
+            return spectatorRepository.save(spectator);
+        }
+    }
+
+    public Spectator addOrUpdateSubscription(Spectator spectator, int planId) {
+        Subscription subscription = subscriptionService.addOrUpdateSubscription(spectator, planId, LocalDateTime.now());
         spectator.setSubscription(subscription);
         return spectatorRepository.save(spectator);
     }

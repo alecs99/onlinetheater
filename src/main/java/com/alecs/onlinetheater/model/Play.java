@@ -1,6 +1,12 @@
 package com.alecs.onlinetheater.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.hibernate.validator.constraints.Length;
+
 import javax.persistence.*;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -9,9 +15,19 @@ public class Play {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int playId;
+    @NotNull
+    @NotEmpty
+    @Length(min=3, max = 15, message = "Play can have a length between 3 and 15 characters!")
     private String playName;
+    @NotNull
+    @NotEmpty
+    @Length(min=3, max = 10, message = "Genre can have a length between 3 and 10 characters!")
     private String genre;
+    @NotNull
+    @NotEmpty
+    @Length(min=10, max = 1000, message = "Description can have a length between 10 and 1000 characters!")
     private String description;
+    @Min(value = 10, message = "Play should be at least 10 minutes long")
     private Integer duration;
 
     @ManyToOne
@@ -22,9 +38,8 @@ public class Play {
     @JoinColumn(name = "playwright_id")
     private Playwright playwright;
 
-    @ManyToMany
-    @JoinTable(name = "play_spectator", joinColumns = @JoinColumn(name = "play_id"),
-                inverseJoinColumns = @JoinColumn(name = "spectator_id"))
+    @ManyToMany(mappedBy = "playList")
+    @JsonIgnore
     private List<Spectator> spectatorList = new ArrayList<>();
 
     public Play() {
