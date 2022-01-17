@@ -29,8 +29,8 @@ public class SpectatorService {
         return spectatorRepository.findById(id);
     }
 
-    public List<Play> getSpectatorPlays(Spectator spectator) {
-        Spectator dbSpectator = spectatorRepository.findById(spectator.getSpectatorId())
+    public List<Play> getSpectatorPlays(int spectatorId) {
+        Spectator dbSpectator = spectatorRepository.findById(spectatorId)
                 .orElseThrow(() -> new DataAccessException("Spectator not found") {});
         return dbSpectator.getPlayList()
                 .stream()
@@ -51,11 +51,16 @@ public class SpectatorService {
         Room playRoom = requestedPlay.getPlayRoom();
 
         Subscription spectatorSubscription = spectator.getSubscription();
+
+        if(spectatorSubscription == null) {
+            throw new NoSubscriptionException("Spectator don't have any subscription! Please get one!");
+        }
+
         String spectatorPlan = spectatorSubscription.getSubscriptionPlan().getPlanName();
 
         // Check if Spectator have valid Subscription
-        if (spectatorPlan.isEmpty() || subscriptionService.checkValidSubscription(spectatorSubscription))
-            throw new NoSubscriptionException("Spectator don't have any subscription! Please get one!");
+        if (subscriptionService.checkValidSubscription(spectatorSubscription))
+            throw new NoSubscriptionException("Spectator have the subscription expired! Please renew it!");
 
         // Spectator try to access a room not available for his subscription
         if (!spectatorPlan.equals("Premium") && playRoom.getRoomType().equals("Premium")){

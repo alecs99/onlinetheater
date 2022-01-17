@@ -16,8 +16,8 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/room")
-//@Api(value = "room", description = "In this endpoint are defined requests for the room model " +
-//        "(list, insert, update or delete plans) ")
+@Api(value = "room", description = "In this endpoint are defined requests for the room model " +
+        "(list, insert, update or delete plans) ")
 public class RoomController {
     private final RoomService roomService;
 
@@ -25,21 +25,21 @@ public class RoomController {
         this.roomService = roomService;
     }
 
-//    @ApiOperation(value = "View a list of available rooms ", response = ResponseEntity.class)
-//    @ApiResponses(value = {
-//            @ApiResponse(code = 200, message = "Successfully retrieved the plan"),
-//            @ApiResponse(code = 404, message = "No rooms were found")
-//    })
+    @ApiOperation(value = "View a list of available rooms ", response = ResponseEntity.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved the plan"),
+            @ApiResponse(code = 404, message = "No rooms were found")
+    })
     @GetMapping
     public ResponseEntity<List<Room>> listRooms() {
         return ResponseEntity.ok().body(roomService.listAllRoms());
     }
 
-//    @ApiOperation(value = "View a room based on a given id", response = ResponseEntity.class)
-//    @ApiResponses(value = {
-//            @ApiResponse(code = 200, message = "Successfully retrieved the room"),
-//            @ApiResponse(code = 404, message = "No room with the given id was found")
-//    })
+    @ApiOperation(value = "View a room based on a given id", response = ResponseEntity.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully retrieved the room"),
+            @ApiResponse(code = 404, message = "No room with the given id was found")
+    })
     @GetMapping("/{roomId}")
     public ResponseEntity<?> listRoomById(@PathVariable int roomId) {
         Optional<Room> result = roomService.findRoom(roomId);
@@ -50,15 +50,15 @@ public class RoomController {
         return ResponseEntity.notFound().build();
     }
 
-//    @ApiOperation(value = "Add a new room ", response = ResponseEntity.class)
-//    @ApiResponses(value = {
-//            @ApiResponse(code = 200, message = "Successfully added the room"),
-//            @ApiResponse(code = 404, message = "Resource not found")
-//    })
+    @ApiOperation(value = "Add a new room ", response = ResponseEntity.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 201, message = "Successfully added the room"),
+            @ApiResponse(code = 404, message = "Resource not found")
+    })
     @PostMapping
     public ResponseEntity<Room> addRoom(@RequestBody @Valid Room room) {
         Room savedRoom = roomService.addNewRoom(room);
-        return ResponseEntity.created(URI.create(savedRoom.getRoomId().toString())).body(savedRoom);
+        return ResponseEntity.created(URI.create("/room/" + savedRoom.getRoomId())).body(savedRoom);
     }
 
     @ApiOperation(value = "Edit an existing room ", response = ResponseEntity.class)
@@ -71,11 +71,11 @@ public class RoomController {
         return ResponseEntity.ok().body(roomService.updateRoom(room));
     }
 
-//    @ApiOperation(value = "Delete an existing room ", response = ResponseEntity.class)
-//    @ApiResponses(value = {
-//            @ApiResponse(code = 200, message = "Successfully deleted the room"),
-//            @ApiResponse(code = 404, message = "No room with the given id was found")
-//    })
+    @ApiOperation(value = "Delete an existing room ", response = ResponseEntity.class)
+    @ApiResponses(value = {
+            @ApiResponse(code = 200, message = "Successfully deleted the room"),
+            @ApiResponse(code = 404, message = "No room with the given id was found")
+    })
     @DeleteMapping("/{roomId}")
     public ResponseEntity<String> deleteRoom(@PathVariable int roomId) {
         if (roomService.deleteRoom(roomId) != -1) {

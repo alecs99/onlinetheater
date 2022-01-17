@@ -7,6 +7,7 @@ import com.alecs.onlinetheater.repository.PlayRepository;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -23,7 +24,11 @@ public class PlayService {
         this.playwrightService = playwrightService;
     }
 
-    public List<Play> listAllPlays () { return playRepository.findAll(); }
+    public List<Play> listAllPlays () {
+        return playRepository.findAll()
+                .stream()
+                .sorted(Comparator.comparing(Play::getPlayName))
+                .collect(Collectors.toList()); }
 
     public List<Play> listAllPlaysByGenre(String genre) {
         return playRepository.findAll()
