@@ -1,5 +1,7 @@
 package com.alecs.onlinetheater.service;
 
+import com.alecs.onlinetheater.exceptions.NoSubscriptionException;
+import com.alecs.onlinetheater.exceptions.SubscriptionAccessException;
 import com.alecs.onlinetheater.model.*;
 import com.alecs.onlinetheater.repository.SpectatorRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -92,6 +94,12 @@ public class SpecatatorServiceTest {
         assertNotNull(result);
         assertEquals(spectator.getUsername(), result.getUsername());
         assertEquals(4, result.getPlayList().size());
+
+        verify(spectatorRepository).findById(spectatorId);
+        verify(playService).findPlay(playId);
+        verify(subscriptionService).checkValidSubscription(spectatorSubscription);
+        verify(spectatorRepository).save(spectator);
+
     }
 
     @Test
@@ -128,6 +136,94 @@ public class SpecatatorServiceTest {
         } catch (DataAccessException e) {
             assertEquals("Play not found", e.getMessage());
         }
+
+    }
+
+    @Test
+    @DisplayName("Running watch play when spectator has no subscription in a bad flow")
+    void watchPlayNoSubscriptionBadFlow() {
+        int spectatorId = 1;
+        int playId = 2;
+        Spectator spectator = new Spectator("spectator");
+        Play dbPlay = new Play("playname", "genre", "description", 100);
+
+
+        when(spectatorRepository.findById(spectatorId)).thenReturn(Optional.of(spectator));
+        when(playService.findPlay(playId)).thenReturn(dbPlay);
+        String spectatorSubscription = null;
+
+        NoSubscriptionException exception = assertThrows(NoSubscriptionException.class,
+                () -> spectatorService.watchPlay(spectatorId, playId));
+
+        assertNotNull(exception);
+        assertEquals("Spectator don't have any subscription! Please get one!",
+                exception.getMessage());
+
+        verify(spectatorRepository).findById(spectatorId);
+        verify(playService).findPlay(playId);
+        verify(spectatorRepository, times(0)).save(any());
+
+    }
+
+    @Test
+    @DisplayName("Running watch play when spectator has expired subscription in a bad flow")
+    void watchPlayExpiredSubscriptionBadFlow() {
+        int spectatorId = 1;
+        int playId = 2;
+        Spectator spectator = new Spectator("spectator");
+        Play dbPlay = new Play("playname", "genre", "description", 100);
+        Plan subscriptionPlan = new Plan(1, "name", "description", 100);
+        Subscription spectatorSubscription = new Subscription
+                (LocalDateTime.now().minusDays(60), LocalDateTime.now().minusDays(30));
+        spectatorSubscription.setSubscriptionPlan(subscriptionPlan);
+        spectator.setSubscription(spectatorSubscription);
+
+        when(spectatorRepository.findById(spectatorId)).thenReturn(Optional.of(spectator));
+        when(playService.findPlay(playId)).thenReturn(dbPlay);
+        when(subscriptionService.checkValidSubscription(spectatorSubscription)).thenReturn(true);
+
+        NoSubscriptionException exception = assertThrows(NoSubscriptionException.class,
+                () -> spectatorService.watchPlay(spectatorId, playId));
+
+        assertNotNull(exception);
+        assertEquals("Spectator have the subscription expired! Please renew it!",
+                exception.getMessage());
+
+        verify(spectatorRepository).findById(spectatorId);
+        verify(playService).findPlay(playId);
+        verify(spectatorRepository, times(0)).save(any());
+
+    }
+
+    @Test
+    @DisplayName("Running watch play when spectator wants to watch a premium play with basic plan in a bad flow")
+    void watchPlaySubscriptionBasicBadFlow() {
+        int spectatorId = 1;
+        int playId = 2;
+        Spectator spectator = new Spectator("spectator");
+        Room playRoom = new Room("name", "Premium");
+        Play dbPlay = new Play("playname", "genre", "description", 100);
+        dbPlay.setPlayRoom(playRoom);
+        Plan subscriptionPlan = new Plan(1, "Basic", "description", 100);
+        Subscription spectatorSubscription = new Subscription
+                (LocalDateTime.now().minusDays(60), LocalDateTime.now().minusDays(30));
+        spectatorSubscription.setSubscriptionPlan(subscriptionPlan);
+        spectator.setSubscription(spectatorSubscription);
+
+        when(spectatorRepository.findById(spectatorId)).thenReturn(Optional.of(spectator));
+        when(playService.findPlay(playId)).thenReturn(dbPlay);
+        when(subscriptionService.checkValidSubscription(spectatorSubscription)).thenReturn(false);
+
+        SubscriptionAccessException exception = assertThrows(SubscriptionAccessException.class,
+                () -> spectatorService.watchPlay(spectatorId, playId));
+
+        assertNotNull(exception);
+        assertEquals("Your subscription doesn't allow accessing this play!!",
+                exception.getMessage());
+
+        verify(spectatorRepository).findById(spectatorId);
+        verify(playService).findPlay(playId);
+        verify(spectatorRepository, times(0)).save(any());
 
     }
 
